@@ -29,7 +29,7 @@ datasource db {
 }
 `);
 
-  const result = spawnSync('bunx', ['prisma', 'generate', `--schema=${tempDir}`], {
+  const result = spawnSync('sh', ['-lc', `bunx prisma generate --schema="${tempDir}"`], {
     cwd: root,
     encoding: 'utf8',
     env: process.env,
