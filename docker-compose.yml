@@ -6,7 +6,7 @@ services:
       target: migrator
     environment:
       DATABASE_URL: ${DATABASE_URL}
-    command: ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
+    command: ["sh", "-lc", "cd packages/db && bunx prisma migrate deploy --schema=prisma/schema"]
     restart: "no"
 
   seeder:
@@ -19,7 +19,7 @@ services:
         condition: service_completed_successfully
     environment:
       DATABASE_URL: ${DATABASE_URL}
-    command: ["sh", "-lc", "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"]
+    command: ["sh", "-lc", "cd packages/db && sh scripts/generate-prisma-client-js.sh && bun prisma/seed/seed.ts"]
     restart: "no"
 
   api:
