@@ -1,62 +1,176 @@
-x-logging: &default-logging
-  driver: json-file
-  options:
-    max-size: '10m'
-    max-file: '5'
-    compress: 'true'
-
 services:
   migrator:
+    image: comp-playground-migrator:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
-    env_file:
-      - packages/db/.env
-    logging: *default-logging
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    command: ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
+    restart: "no"
+    networks:
+      - coolify
+
   seeder:
+    image: comp-playground-seeder:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
-    env_file:
-      - packages/db/.env
-    command: sh -lc "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"
-    logging: *default-logging
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    command: ["sh", "-lc", "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"]
+    restart: "no"
+    networks:
+      - coolify
+
+  api:
+    image: comp-playground-api:latest
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.multistage
+      target: production
+    depends_on:
+      seeder:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: "3333"
+      DATABASE_URL: ${DATABASE_URL}
+      BASE_URL: ${APP_URL}
+      BETTER_AUTH_URL: ${APP_URL}
+      NEXT_PUBLIC_APP_URL: ${APP_URL}
+      NEXT_PUBLIC_API_URL: ${APP_URL}
+      NEXT_PUBLIC_BETTER_AUTH_URL: ${APP_URL}
+      NEXT_PUBLIC_PORTAL_URL: ${PORTAL_URL}
+      AUTH_TRUSTED_ORIGINS: ${AUTH_TRUSTED_ORIGINS}
+      AUTH_SECRET: ${AUTH_SECRET}
+      BETTER_AUTH_SECRET: ${AUTH_SECRET}
+      SECRET_KEY: ${SECRET_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_SYSTEM: ${RESEND_FROM_SYSTEM}
+      RESEND_FROM_DEFAULT: ${RESEND_FROM_DEFAULT}
+      RESEND_FROM_TRUST_PORTAL: ${RESEND_FROM_TRUST_PORTAL}
+      TRIGGER_SECRET_KEY: ${TRIGGER_SECRET_KEY}
+      REVALIDATION_SECRET: ${REVALIDATION_SECRET}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+      SERVICE_TOKEN_TRIGGER: ${SERVICE_TOKEN_TRIGGER}
+      SERVICE_TOKEN_PORTAL: ${SERVICE_TOKEN_PORTAL}
+      APP_AWS_REGION: ${APP_AWS_REGION}
+      APP_AWS_ACCESS_KEY_ID: ${APP_AWS_ACCESS_KEY_ID}
+      APP_AWS_SECRET_ACCESS_KEY: ${APP_AWS_SECRET_ACCESS_KEY}
+      APP_AWS_BUCKET_NAME: ${APP_AWS_BUCKET_NAME}
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
+      NEXT_PUBLIC_SELF_HOSTED: "true"
+      NEXT_PUBLIC_APP_ENV: staging
+    restart: unless-stopped
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.comp-playground-api.rule=(Host(`${APP_HOST}`) || Host(`${PORTAL_HOST}`)) && (PathPrefix(`/api/auth`) || PathPrefix(`/v1`) || PathPrefix(`/api/docs`))"
+      - "traefik.http.routers.comp-playground-api.entryPoints=https"
+      - "traefik.http.routers.comp-playground-api.tls=true"
+      - "traefik.http.routers.comp-playground-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.comp-playground-api.priority=100"
+      - "traefik.http.routers.comp-playground-api.service=comp-playground-api"
+      - "traefik.http.services.comp-playground-api.loadbalancer.server.port=3333"
+
   app:
+    image: comp-playground-app:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: app
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL}
-    ports:
-      - '3000:3000'
-    env_file:
-      - apps/app/.env
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${APP_URL}
+        NEXT_PUBLIC_PORTAL_URL: ${PORTAL_URL}
+        NEXT_PUBLIC_API_URL: ${APP_URL}
+        NEXT_PUBLIC_IS_DUB_ENABLED: "false"
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      BETTER_AUTH_SECRET: ${AUTH_SECRET}
+      SECRET_KEY: ${SECRET_KEY}
+      BETTER_AUTH_URL: ${APP_URL}
+      NEXT_PUBLIC_BETTER_AUTH_URL: ${APP_URL}
+      NEXT_PUBLIC_API_URL: ${APP_URL}
+      BACKEND_API_URL: http://api:3333
+      NEXT_PUBLIC_PORTAL_URL: ${PORTAL_URL}
+      NEXT_PUBLIC_SELF_HOSTED: "true"
+      NEXT_PUBLIC_APP_ENV: staging
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_SYSTEM: ${RESEND_FROM_SYSTEM}
+      RESEND_FROM_DEFAULT: ${RESEND_FROM_DEFAULT}
+      RESEND_FROM_TRUST_PORTAL: ${RESEND_FROM_TRUST_PORTAL}
+      TRIGGER_SECRET_KEY: ${TRIGGER_SECRET_KEY}
+      REVALIDATION_SECRET: ${REVALIDATION_SECRET}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+      SERVICE_TOKEN_TRIGGER: ${SERVICE_TOKEN_TRIGGER}
+      SERVICE_TOKEN_PORTAL: ${SERVICE_TOKEN_PORTAL}
     restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    command: sh -lc "node apps/app/server.js"
-    logging: *default-logging
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.comp-playground-app.rule=Host(`${APP_HOST}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.comp-playground-app.entryPoints=https"
+      - "traefik.http.routers.comp-playground-app.tls=true"
+      - "traefik.http.routers.comp-playground-app.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.comp-playground-app.priority=1"
+      - "traefik.http.routers.comp-playground-app.service=comp-playground-app"
+      - "traefik.http.services.comp-playground-app.loadbalancer.server.port=3000"
+
   portal:
+    image: comp-playground-portal:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: portal
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${BETTER_AUTH_URL_PORTAL}
-    ports:
-      - '3002:3000'
-    env_file:
-      - apps/portal/.env
+        NEXT_PUBLIC_BETTER_AUTH_URL: ${PORTAL_URL}
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      BETTER_AUTH_SECRET: ${AUTH_SECRET}
+      SECRET_KEY: ${SECRET_KEY}
+      BETTER_AUTH_URL: ${PORTAL_URL}
+      NEXT_PUBLIC_BETTER_AUTH_URL: ${PORTAL_URL}
+      NEXT_PUBLIC_API_URL: ${PORTAL_URL}
+      BACKEND_API_URL: http://api:3333
+      NEXT_PUBLIC_APP_URL: ${APP_URL}
+      NEXT_PUBLIC_SELF_HOSTED: "true"
+      NEXT_PUBLIC_APP_ENV: staging
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_SYSTEM: ${RESEND_FROM_SYSTEM}
+      RESEND_FROM_DEFAULT: ${RESEND_FROM_DEFAULT}
+      RESEND_FROM_TRUST_PORTAL: ${RESEND_FROM_TRUST_PORTAL}
     restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/ || exit 1']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    logging: *default-logging
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.comp-playground-portal.rule=Host(`${PORTAL_HOST}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.comp-playground-portal.entryPoints=https"
+      - "traefik.http.routers.comp-playground-portal.tls=true"
+      - "traefik.http.routers.comp-playground-portal.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.comp-playground-portal.priority=1"
+      - "traefik.http.routers.comp-playground-portal.service=comp-playground-portal"
+      - "traefik.http.services.comp-playground-portal.loadbalancer.server.port=3000"
+
+networks:
+  coolify:
+    external: true
