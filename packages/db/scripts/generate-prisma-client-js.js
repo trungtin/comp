@@ -9,13 +9,7 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const schemaDir = path.join(root, 'prisma/schema');
-const configPath = path.join(root, 'prisma.config.ts');
-const configBackup = configPath + '.bak';
 const tempDir = fs.mkdtempSync(path.join(root, '.prisma-clientjs-'));
-
-// Hide prisma.config.ts so prisma doesn't try to load it
-const hasConfig = fs.existsSync(configPath);
-if (hasConfig) fs.renameSync(configPath, configBackup);
 
 try {
   // Copy model files
@@ -31,7 +25,6 @@ try {
 
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL")
   extensions = [pgcrypto]
 }
 `);
@@ -48,5 +41,4 @@ datasource db {
   }
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
-  if (hasConfig && fs.existsSync(configBackup)) fs.renameSync(configBackup, configPath);
 }
