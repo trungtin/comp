@@ -36,11 +36,7 @@ datasource db {
 }
 `);
 
-  // Resolve prisma CLI via Node/Bun module resolution (handles hoisting)
-  const prismaPackage = require.resolve('prisma/package.json');
-  const prismaCli = path.join(path.dirname(prismaPackage), 'build', 'index.js');
-
-  execFileSync(process.execPath, [prismaCli, 'generate', `--schema=${tempDir}`], {
+  execFileSync('bunx', ['prisma', 'generate', `--schema=${tempDir}`], {
     stdio: 'inherit',
     cwd: root,
   });
