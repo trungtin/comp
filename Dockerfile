@@ -72,8 +72,8 @@ COPY --from=deps /app/node_modules ./node_modules
 # `--ignore-scripts` so packages/db's postinstall was skipped; we run
 # it explicitly here so `next build` can resolve the generated runtime
 # + types when it imports @prisma/client.
-RUN cd packages/db && node scripts/combine-schemas.js \
-                   && node scripts/generate-prisma-client-js.js
+RUN cd packages/db && bun scripts/combine-schemas.js \
+                   && bun scripts/generate-prisma-client-js.js
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
@@ -125,7 +125,7 @@ COPY apps/portal ./apps/portal
 COPY --from=deps /app/node_modules ./node_modules
 
 # Pre-combine schemas for portal build
-RUN cd packages/db && node scripts/combine-schemas.js
+RUN cd packages/db && bun scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
 
 # Ensure Next build has required public env at build-time
