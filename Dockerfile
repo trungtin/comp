@@ -59,6 +59,7 @@ CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db
 FROM deps AS app-builder
 
 WORKDIR /app
+ARG DATABASE_URL
 
 # Copy all source code needed for build
 COPY packages ./packages
