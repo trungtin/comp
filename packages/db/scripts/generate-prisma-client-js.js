@@ -3,7 +3,7 @@
  * Generates a prisma-client-js client to populate @prisma/client at node_modules.
  * Creates a temp schema dir, copies model files, generates with prisma-client-js.
  */
-const { execFileSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -36,10 +36,16 @@ datasource db {
 }
 `);
 
-  execFileSync('bunx', ['prisma', 'generate', `--schema=${tempDir}`], {
-    stdio: 'inherit',
+  const result = spawnSync('bunx', ['prisma', 'generate', `--schema=${tempDir}`], {
     cwd: root,
+    encoding: 'utf8',
   });
+
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.status !== 0) {
+    throw new Error(`Prisma generate exited with status ${result.status ?? 'unknown'}`);
+  }
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
   if (hasConfig && fs.existsSync(configBackup)) fs.renameSync(configBackup, configPath);
