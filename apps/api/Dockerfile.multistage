@@ -62,7 +62,10 @@ COPY packages/billing ./packages/billing
 COPY apps/api ./apps/api
 
 # Build db — generates Prisma client + compiles dist/ for @trycompai/db consumers
-RUN cd packages/db && bun run build
+RUN cd packages/db && rm -rf dist
+RUN cd packages/db && node scripts/generate-prisma-client-js.js
+RUN cd packages/db && bunx tsc
+RUN cd packages/db && node scripts/build-dist-schema.js
 
 # Build remaining workspace packages
 RUN cd packages/auth && bun run build \
