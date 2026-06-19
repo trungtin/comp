@@ -27,7 +27,7 @@ COPY apps/app/package.json ./apps/app/
 COPY apps/portal/package.json ./apps/portal/
 
 # Install all dependencies
-RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
+RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts --linker hoisted
 
 # =============================================================================
 # STAGE 2: Ultra-Minimal Migrator - Only Prisma
@@ -43,7 +43,7 @@ COPY packages/db/prisma ./packages/db/prisma
 RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.14.0","@prisma/client":"^6.14.0","@trycompai/db":"^1.3.4","zod":"^3.25.7"}}' > package.json
 
 # Install ONLY Prisma dependencies
-RUN bun install
+RUN bun install --linker hoisted
 
 # Ensure Prisma can find migrations relative to the published schema path
 # We copy the local migrations into the published package's dist directory
