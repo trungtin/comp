@@ -74,7 +74,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # it explicitly here so `next build` can resolve the generated runtime
 # + types when it imports @prisma/client.
 RUN cd packages/db && bun scripts/combine-schemas.js \
-                   && DATABASE_URL="$DATABASE_URL" bun scripts/generate-prisma-client-js.js
+                   && DATABASE_URL="$DATABASE_URL" sh scripts/generate-prisma-client-js.sh
 
 # Ensure Next build has required public env at build-time
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
