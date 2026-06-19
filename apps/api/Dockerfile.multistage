@@ -14,6 +14,14 @@ COPY package.json bun.lock ./
 RUN cat package.json | bun -e " \
   const pkg = JSON.parse(await Bun.stdin.text()); \
   delete pkg.dependencies; delete pkg.devDependencies; delete pkg.scripts; \
+  pkg.dependencies = { \
+    '@prisma/adapter-pg': '7.6.0', \
+    '@prisma/client': '7.6.0', \
+    '@types/node': '^24.2.0', \
+    dotenv: '^16.4.5', \
+    prisma: '7.6.0', \
+    typescript: '^5.9.2' \
+  }; \
   console.log(JSON.stringify(pkg, null, 2));" > package.min.json \
   && mv package.min.json package.json
 
