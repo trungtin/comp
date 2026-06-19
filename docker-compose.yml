@@ -34,13 +34,13 @@ services:
       NODE_ENV: production
       PORT: "3333"
       DATABASE_URL: ${DATABASE_URL}
-      BASE_URL: ${APP_URL}
-      BETTER_AUTH_URL: ${APP_URL}
-      NEXT_PUBLIC_APP_URL: ${APP_URL}
-      NEXT_PUBLIC_API_URL: ${APP_URL}
-      NEXT_PUBLIC_BETTER_AUTH_URL: ${APP_URL}
-      NEXT_PUBLIC_PORTAL_URL: ${PORTAL_URL}
-      AUTH_TRUSTED_ORIGINS: ${AUTH_TRUSTED_ORIGINS}
+      BASE_URL: https://comp.internal.dealtraq.com
+      BETTER_AUTH_URL: https://comp.internal.dealtraq.com
+      NEXT_PUBLIC_APP_URL: https://comp.internal.dealtraq.com
+      NEXT_PUBLIC_API_URL: https://comp.internal.dealtraq.com
+      NEXT_PUBLIC_BETTER_AUTH_URL: https://comp.internal.dealtraq.com
+      NEXT_PUBLIC_PORTAL_URL: https://comp-portal.internal.dealtraq.com
+      AUTH_TRUSTED_ORIGINS: https://comp.internal.dealtraq.com,https://comp-portal.internal.dealtraq.com
       AUTH_SECRET: ${AUTH_SECRET}
       BETTER_AUTH_SECRET: ${AUTH_SECRET}
       SECRET_KEY: ${SECRET_KEY}
@@ -64,7 +64,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.comp-playground-api.rule=(Host(`${APP_HOST}`) || Host(`${PORTAL_HOST}`)) && (PathPrefix(`/api/auth`) || PathPrefix(`/v1`) || PathPrefix(`/api/docs`))"
+      - "traefik.http.routers.comp-playground-api.rule=(Host(`comp.internal.dealtraq.com`) || Host(`comp-portal.internal.dealtraq.com`)) && (PathPrefix(`/api/auth`) || PathPrefix(`/v1`) || PathPrefix(`/api/docs`))"
       - "traefik.http.routers.comp-playground-api.entryPoints=https"
       - "traefik.http.routers.comp-playground-api.tls=true"
       - "traefik.http.routers.comp-playground-api.tls.certresolver=letsencrypt"
@@ -78,9 +78,9 @@ services:
       dockerfile: Dockerfile
       target: app
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${APP_URL}
-        NEXT_PUBLIC_PORTAL_URL: ${PORTAL_URL}
-        NEXT_PUBLIC_API_URL: ${APP_URL}
+        NEXT_PUBLIC_BETTER_AUTH_URL: https://comp.internal.dealtraq.com
+        NEXT_PUBLIC_PORTAL_URL: https://comp-portal.internal.dealtraq.com
+        NEXT_PUBLIC_API_URL: https://comp.internal.dealtraq.com
         NEXT_PUBLIC_IS_DUB_ENABLED: "false"
     depends_on:
       api:
@@ -91,11 +91,11 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       BETTER_AUTH_SECRET: ${AUTH_SECRET}
       SECRET_KEY: ${SECRET_KEY}
-      BETTER_AUTH_URL: ${APP_URL}
-      NEXT_PUBLIC_BETTER_AUTH_URL: ${APP_URL}
-      NEXT_PUBLIC_API_URL: ${APP_URL}
+      BETTER_AUTH_URL: https://comp.internal.dealtraq.com
+      NEXT_PUBLIC_BETTER_AUTH_URL: https://comp.internal.dealtraq.com
+      NEXT_PUBLIC_API_URL: https://comp.internal.dealtraq.com
       BACKEND_API_URL: http://api:3333
-      NEXT_PUBLIC_PORTAL_URL: ${PORTAL_URL}
+      NEXT_PUBLIC_PORTAL_URL: https://comp-portal.internal.dealtraq.com
       NEXT_PUBLIC_SELF_HOSTED: "true"
       NEXT_PUBLIC_APP_ENV: staging
       RESEND_API_KEY: ${RESEND_API_KEY}
@@ -110,7 +110,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.comp-playground-app.rule=Host(`${APP_HOST}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.comp-playground-app.rule=Host(`comp.internal.dealtraq.com`) && PathPrefix(`/`)"
       - "traefik.http.routers.comp-playground-app.entryPoints=https"
       - "traefik.http.routers.comp-playground-app.tls=true"
       - "traefik.http.routers.comp-playground-app.tls.certresolver=letsencrypt"
@@ -124,7 +124,7 @@ services:
       dockerfile: Dockerfile
       target: portal
       args:
-        NEXT_PUBLIC_BETTER_AUTH_URL: ${PORTAL_URL}
+        NEXT_PUBLIC_BETTER_AUTH_URL: https://comp-portal.internal.dealtraq.com
     depends_on:
       api:
         condition: service_started
@@ -134,11 +134,11 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       BETTER_AUTH_SECRET: ${AUTH_SECRET}
       SECRET_KEY: ${SECRET_KEY}
-      BETTER_AUTH_URL: ${PORTAL_URL}
-      NEXT_PUBLIC_BETTER_AUTH_URL: ${PORTAL_URL}
-      NEXT_PUBLIC_API_URL: ${PORTAL_URL}
+      BETTER_AUTH_URL: https://comp-portal.internal.dealtraq.com
+      NEXT_PUBLIC_BETTER_AUTH_URL: https://comp-portal.internal.dealtraq.com
+      NEXT_PUBLIC_API_URL: https://comp-portal.internal.dealtraq.com
       BACKEND_API_URL: http://api:3333
-      NEXT_PUBLIC_APP_URL: ${APP_URL}
+      NEXT_PUBLIC_APP_URL: https://comp.internal.dealtraq.com
       NEXT_PUBLIC_SELF_HOSTED: "true"
       NEXT_PUBLIC_APP_ENV: staging
       RESEND_API_KEY: ${RESEND_API_KEY}
@@ -148,7 +148,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.comp-playground-portal.rule=Host(`${PORTAL_HOST}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.comp-playground-portal.rule=Host(`comp-portal.internal.dealtraq.com`) && PathPrefix(`/`)"
       - "traefik.http.routers.comp-playground-portal.entryPoints=https"
       - "traefik.http.routers.comp-playground-portal.tls=true"
       - "traefik.http.routers.comp-playground-portal.tls.certresolver=letsencrypt"
