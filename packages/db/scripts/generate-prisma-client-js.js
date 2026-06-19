@@ -32,6 +32,7 @@ datasource db {
   const result = spawnSync('bunx', ['prisma', 'generate', `--schema=${tempDir}`], {
     cwd: root,
     encoding: 'utf8',
+    env: process.env,
   });
 
   if (result.stdout) process.stdout.write(result.stdout);
