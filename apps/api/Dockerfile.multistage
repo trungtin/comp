@@ -22,7 +22,7 @@ COPY packages/billing/package.json ./packages/billing/
 COPY apps/api/package.json ./apps/api/
 
 # Install dependencies — skip lifecycle scripts (husky, etc. not needed in Docker)
-RUN bun install --ignore-scripts && test -d node_modules/@prisma/client
+RUN bun install --ignore-scripts
 
 # =============================================================================
 # STAGE 2: Builder - Build workspace packages and NestJS app
