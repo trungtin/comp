@@ -1,6 +1,5 @@
 services:
   migrator:
-    image: comp-playground-migrator:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,11 +8,8 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     command: ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
     restart: "no"
-    networks:
-      - coolify
 
   seeder:
-    image: comp-playground-seeder:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -25,11 +21,8 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     command: ["sh", "-lc", "bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma && bun packages/db/prisma/seed/seed.js"]
     restart: "no"
-    networks:
-      - coolify
 
   api:
-    image: comp-playground-api:latest
     build:
       context: .
       dockerfile: apps/api/Dockerfile.multistage
@@ -69,8 +62,6 @@ services:
       NEXT_PUBLIC_SELF_HOSTED: "true"
       NEXT_PUBLIC_APP_ENV: staging
     restart: unless-stopped
-    networks:
-      - coolify
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.comp-playground-api.rule=(Host(`${APP_HOST}`) || Host(`${PORTAL_HOST}`)) && (PathPrefix(`/api/auth`) || PathPrefix(`/v1`) || PathPrefix(`/api/docs`))"
@@ -82,7 +73,6 @@ services:
       - "traefik.http.services.comp-playground-api.loadbalancer.server.port=3333"
 
   app:
-    image: comp-playground-app:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -118,8 +108,6 @@ services:
       SERVICE_TOKEN_TRIGGER: ${SERVICE_TOKEN_TRIGGER}
       SERVICE_TOKEN_PORTAL: ${SERVICE_TOKEN_PORTAL}
     restart: unless-stopped
-    networks:
-      - coolify
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.comp-playground-app.rule=Host(`${APP_HOST}`) && PathPrefix(`/`)"
@@ -131,7 +119,6 @@ services:
       - "traefik.http.services.comp-playground-app.loadbalancer.server.port=3000"
 
   portal:
-    image: comp-playground-portal:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -159,8 +146,6 @@ services:
       RESEND_FROM_DEFAULT: ${RESEND_FROM_DEFAULT}
       RESEND_FROM_TRUST_PORTAL: ${RESEND_FROM_TRUST_PORTAL}
     restart: unless-stopped
-    networks:
-      - coolify
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.comp-playground-portal.rule=Host(`${PORTAL_HOST}`) && PathPrefix(`/`)"
@@ -170,7 +155,3 @@ services:
       - "traefik.http.routers.comp-playground-portal.priority=1"
       - "traefik.http.routers.comp-playground-portal.service=comp-playground-portal"
       - "traefik.http.services.comp-playground-portal.loadbalancer.server.port=3000"
-
-networks:
-  coolify:
-    external: true
